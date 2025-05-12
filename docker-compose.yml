@@ -1,0 +1,82 @@
+version: '3'
+services:
+  # PHP Service
+  app:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    # image: laravel-app
+    container_name: laravel-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      PHP_XDEBUG: "1"
+      PHP_XDEBUG_DEFAULT_ENABLE: "1"
+    working_dir: /var/www/html
+    volumes:
+      - ./app:/var/www/html
+    command: sh -c "chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache && php-fpm"
+    networks:
+      - laravel-network
+
+  # Nginx Service
+  webserver:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    # image: laravel-nginx
+    container_name: laravel-web
+    ports:
+      - "8000:80"
+    depends_on:
+      - app
+    volumes:
+      - ./app:/var/www/html
+    networks:
+      - laravel-network
+
+  # MySQL Database
+  db:
+    image: mysql:8.3
+    container_name: laravel-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+    ports:
+      - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/custom.cnf
+    networks:
+      - laravel-network
+
+  # Redis Cache
+  redis:
+    image: redis:alpine
+    container_name: laravel-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - laravel-network
+  #node js
+  node:
+    image: node:20
+    container_name: laravel-node
+    working_dir: /var/www/html
+    volumes:
+      - ./app:/var/www/html
+    ports:
+      - "3000:3000"
+    command: tail -f /dev/null
+
+volumes:
+  dbdata:
+  redisdata:
+
+networks:
+  laravel-network:
+    driver: bridge
