@@ -38,7 +38,7 @@ services:
 
   # MySQL Database
   db:
-    image: mysql:8.3
+    image: mysql:lts
     container_name: laravel-db
     restart: unless-stopped
     environment:
